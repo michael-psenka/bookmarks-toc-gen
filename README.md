@@ -22,7 +22,7 @@ This extension generates and keeps updated a comment at the top of your file con
 
 NOTE: you must have the following for this extension to work:
 
-1. The "Bookmarks" extension by Alessandro Fragnani
+1. The "Bookmarks" extension by Alessandro Fragnani.
 2. Within the "Bookmarks" extension settings, have "Save Bookmarks in Project" enabled.
 ## Extension Settings
 
