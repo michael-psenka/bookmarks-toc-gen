@@ -82,9 +82,16 @@ async function updateTableOfContents(editor: vscode.TextEditor): Promise<void> {
         tocLines.push(`${bookmark+1+bibChangeOffset}: ${line.text}`);
     }
     tocLines.push('*********');
-    edit.insert(document.uri, new vscode.Position(0, 0), tocLines.join('\n'));
+    // edit.insert(document.uri, new vscode.Position(0, 0), tocLines.join('\n'));
 
     await vscode.workspace.applyEdit(edit);
+	// finally, comment out the table of contents
+	const startLineComment = document.lineAt(0);
+    const endLineComment = document.lineAt(5);
+    // vscode.commands.executeCommand('editor.action.commentLine');
+    editor.selection = new vscode.Selection(startLineComment.range.start, endLineComment.range.end);
+    await vscode.commands.executeCommand('editor.action.commentLine');
+
 }
 
 export function activate(context: vscode.ExtensionContext) {
