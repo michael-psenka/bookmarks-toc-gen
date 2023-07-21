@@ -1,8 +1,10 @@
 {
   "name": "bookmarks-toc-gen",
   "displayName": "Bookmarks Table of Contents Generator",
-  "description": "Will create a dynamically updated comment at the top of your file listing your bookmarks with their line numbers",
-  "version": "0.0.1",
+  "description": "Will create a dynamically updated comment at the top of your file listing your bookmarks with their line numbers.",
+  "version": "1.0.0",
+  "publisher": "michael-psenka",
+  "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.80.0"
   },
@@ -24,7 +26,22 @@
         "key": "ctrl+alt+b ctrl+alt+s",
         "when": "editorTextFocus"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Table of Contents Generator Settings",
+      "properties": {
+        "michael-psenka.bookmarks-toc-gen.separator": {
+          "type": "string",
+          "default": "*---------------------------------------------------------*",
+          "description": "The separator string to use for the table of contents. I use this to detect where the TOC is, so please make it something unique!"
+        },
+        "michael-psenka.bookmarks-toc-gen.maxLinesSearch": {
+          "type": "number",
+          "default": 100,
+          "description": "The maximum number of lines to search for the table of contents in a document. In other words, your table of contents will not be found for updating if it's further down in lines than this number."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

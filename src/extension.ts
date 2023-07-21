@@ -1,10 +1,22 @@
-// The module 'vscode' contains the VS Code extensibility API testing testing
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// *---------------------------------------------------------*
 
+// 15: Getting bookmarks from Bookmarks plugin
+// 55: Main method: updating table of contents
+// 147: Misc. VS Code plugin stuff
+
+// *---------------------------------------------------------*
+
+
+// Getting bookmarks from Bookmarks plugin
+
+// while not taking arguments, getBookmarks() builds off of the current editor's
+// document to extract all bookmarks (found in config file from Bookmarks plugin)
+// and returns them as a plain array of integera
 async function getBookmarks(): Promise<number[]> {
 	try {
 		const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -39,61 +51,100 @@ async function getBookmarks(): Promise<number[]> {
 	}
 }
 
-// Function of great value
+
+// Main method: updating table of contents
+
+// When the command bookmarks-toc-gen.updateTableOfContents is called, this method is
+// then called on the active text editor (as such, must have an active text editor to use)
 async function updateTableOfContents(editor: vscode.TextEditor): Promise<void> {
-    const document = editor.document;
-    const bookmarks = await getBookmarks();
+	const document = editor.document;
+	const bookmarks = await getBookmarks();
 
-    const edit = new vscode.WorkspaceEdit();
+	const edit = new vscode.WorkspaceEdit();
+	// Get the table of contents separator from the configuration
+	const config = vscode.workspace.getConfiguration('michael-psenka.bookmarks-toc-gen');
+	const separator = config.get<string>('separator') || '*---------------------------------------------------------*';
+	const maxSearch = config.get<number>('maxLinesSearch') || 100;
 
-    // Find the start and end lines of the table of contents
-    let startLine = -1;
-    let endLine = -1;
-    for (let i = 0; i < document.lineCount; i++) {
-        const line = document.lineAt(i);
-        if (line.text === '*********') {
-            if (startLine === -1) {
-                startLine = i;
-            } else {
-                endLine = i;
-                break;
-            }
-        }
-    }
+	// Find the start and end lines of the table of contents
+	let startLine = -1;
+	let endLine = -1;
+	// for efficiency, we don't want to search the entire document
+	for (let i = 0; i < document.lineCount && i < maxSearch; i++) {
+		const line = document.lineAt(i);
+		// check if the line contains the separator (possibly with at most 5 characters before)
+		// due to comments
+		if (line.text.substring(0, separator.length + 5).includes(separator)) {
+			if (startLine === -1) {
+				startLine = i;
+			} else {
+				endLine = i;
+				break;
+			}
+		}
+	}
 
-    // If the table of contents exists, delete it
+	// If the table of contents exists, delete it
+	if (startLine != -1 && endLine != -1) {
+		edit.delete(document.uri, new vscode.Range(startLine, 0, endLine+1, 0));
+		// edit.insert(document.uri, new vscode.Position(startLine, 0), '\n');
+		// await vscode.workspace.applyEdit(edit);
+		vscode.window.showInformationMessage('TOC-GEN: Detected and deleted table of contents between lines ' + (startLine + 1) + ' and ' + (endLine + 1) + '.');
+	}
 
-    if (startLine !== -1 && endLine !== -1) {
-        edit.delete(document.uri, new vscode.Range(startLine + 1, 0, endLine, 0));
-        edit.insert(document.uri, new vscode.Position(endLine, 0), '\n');
-    }
+	else {
+		startLine = 0;
+		endLine = 0;
+	}
 
 	// now we need to account for the difference in how long the TOC was before vs. how
 	// long it will be now after the update
-	const bibChangeOffset = bookmarks.length - (endLine - startLine - 1);
 
-    // Insert the new table of contents
-    const tocLines = [];
-    tocLines.push('*********');
-    for (const bookmark of bookmarks) {
-        const line = document.lineAt(bookmark+1);
+	// the following is the difference in what we display for the line number
+	let bibChangeOffset = bookmarks.length - (endLine - startLine - 3);
+	// account for difference when toc has not been created yet
+	if (startLine == 0 && endLine == 0) {
+		bibChangeOffset += 1;
+	}
+
+	// Insert the new table of contents
+	const tocLines = [];
+	tocLines.push(separator);
+	tocLines.push('');
+	for (const bookmark of bookmarks) {
+		const line = document.lineAt(bookmark);
+		// extract the non-comment text, by taking the substring starting from the first
+		// alphabetical character, using regex
+		const regex = /[a-zA-Z]/;
+		const indAlph = line.text.search(regex);
+		const lineNoComment = line.text.substring(indAlph);
+
 		// note that line numbers in bookmark are 0-indexed. and as described before,
 		// we need to account for the lines we are now potentially creating for the table of contents
-        tocLines.push(`${bookmark+1+bibChangeOffset}: ${line.text}`);
-    }
-    tocLines.push('*********');
-    // edit.insert(document.uri, new vscode.Position(0, 0), tocLines.join('\n'));
+		tocLines.push(`${bookmark + 1 + bibChangeOffset}: ${lineNoComment}`);
+	}
+	tocLines.push('');
+	tocLines.push(separator);
+	tocLines.push('');
 
-    await vscode.workspace.applyEdit(edit);
+	// insert all tocLines at line startLine
+	edit.insert(document.uri, new vscode.Position(startLine, 0), tocLines.join('\n'));
+
+	await vscode.workspace.applyEdit(edit);
+	vscode.window.showInformationMessage('TOC-GEN: Inserted new table of contents between lines ' + (startLine + 1) + ' and ' + (startLine + tocLines.length - 1) + '.');
 	// finally, comment out the table of contents
-	const startLineComment = document.lineAt(0);
-    const endLineComment = document.lineAt(5);
-    // vscode.commands.executeCommand('editor.action.commentLine');
-    editor.selection = new vscode.Selection(startLineComment.range.start, endLineComment.range.end);
-    await vscode.commands.executeCommand('editor.action.commentLine');
+	const startLineComment = document.lineAt(startLine);
+	const endLineComment = document.lineAt(startLine + tocLines.length - 2);
+	// vscode.commands.executeCommand('editor.action.commentLine');
+	editor.selection = new vscode.Selection(startLineComment.range.start, endLineComment.range.end);
+	await vscode.commands.executeCommand('editor.action.commentLine');
+	// remove the selection
+	let posEditor = editor.selection.end; 
+	editor.selection = new vscode.Selection(posEditor, posEditor);
 
 }
 
+// Misc. VS Code plugin stuff
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "bookmarks-toc-gen" is now active!');
 
