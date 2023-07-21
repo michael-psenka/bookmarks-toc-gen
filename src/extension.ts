@@ -3,11 +3,13 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Important lines:
+
 // *---------------------------------------------------------*
 
-// 15: Getting bookmarks from Bookmarks plugin
-// 55: Main method: updating table of contents
-// 147: Misc. VS Code plugin stuff
+// 17: Getting bookmarks from Bookmarks plugin
+// 57: Main method: updating table of contents
+// 153: Misc. VS Code plugin stuff
 
 // *---------------------------------------------------------*
 
@@ -116,8 +118,12 @@ async function updateTableOfContents(editor: vscode.TextEditor): Promise<void> {
 		// extract the non-comment text, by taking the substring starting from the first
 		// alphabetical character, using regex
 		const regex = /[a-zA-Z]/;
-		const indAlph = line.text.search(regex);
-		const lineNoComment = line.text.substring(indAlph);
+		const indAlphFirst = line.text.search(regex);
+		// find the last occurence of regex by flipping the string, then searching, then doing additive complement
+		const indAlphLast = line.text.length - 1 - line.text.split('').reverse().join('').search(regex);
+		// find the index of the final character
+		
+		const lineNoComment = line.text.substring(indAlphFirst, indAlphLast+1);
 
 		// note that line numbers in bookmark are 0-indexed. and as described before,
 		// we need to account for the lines we are now potentially creating for the table of contents

@@ -1,8 +1,8 @@
 {
   "name": "bookmarks-toc-gen",
   "displayName": "Bookmarks Table of Contents Generator",
-  "description": "Will create a dynamically updated comment at the top of your file listing your bookmarks with their line numbers.",
-  "version": "1.0.0",
+  "description": "Creates a dynamically updated comment at the top of your file listing your bookmarks with their line numbers.",
+  "version": "1.0.1",
   "publisher": "michael-psenka",
   "icon": "images/icon.png",
   "engines": {
@@ -74,6 +74,9 @@
     "@vscode/vsce": "^2.19.0",
     "vsce": "^2.15.0"
   },
+  "extensionDependencies": [
+    "alefragnani.Bookmarks"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/michael-psenka/bookmarks-toc-gen.git"
