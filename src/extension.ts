@@ -39,21 +39,52 @@ async function getBookmarks(): Promise<number[]> {
 	}
 }
 
+// Function of great value
 async function updateTableOfContents(editor: vscode.TextEditor): Promise<void> {
-	const document = editor.document;
-	const bookmarks = await getBookmarks();
+    const document = editor.document;
+    const bookmarks = await getBookmarks();
 
-	const edit = new vscode.WorkspaceEdit();
-	const firstLine = document.lineAt(0);
-	const startPos = new vscode.Position(0, 0);
-	const endPos = new vscode.Position(firstLine.range.end.line, firstLine.range.end.character);
+    const edit = new vscode.WorkspaceEdit();
 
-	const bookmarkText = bookmarks
-		.map((bookmark) => document.getText(bookmark).trim())
-		.join('\n');
+    // Find the start and end lines of the table of contents
+    let startLine = -1;
+    let endLine = -1;
+    for (let i = 0; i < document.lineCount; i++) {
+        const line = document.lineAt(i);
+        if (line.text === '*********') {
+            if (startLine === -1) {
+                startLine = i;
+            } else {
+                endLine = i;
+                break;
+            }
+        }
+    }
 
-	edit.insert(document.uri, startPos, bookmarkText);
-	await vscode.workspace.applyEdit(edit);
+    // If the table of contents exists, delete it
+
+    if (startLine !== -1 && endLine !== -1) {
+        edit.delete(document.uri, new vscode.Range(startLine + 1, 0, endLine, 0));
+        edit.insert(document.uri, new vscode.Position(endLine, 0), '\n');
+    }
+
+	// now we need to account for the difference in how long the TOC was before vs. how
+	// long it will be now after the update
+	const bibChangeOffset = bookmarks.length - (endLine - startLine - 1);
+
+    // Insert the new table of contents
+    const tocLines = [];
+    tocLines.push('*********');
+    for (const bookmark of bookmarks) {
+        const line = document.lineAt(bookmark+1);
+		// note that line numbers in bookmark are 0-indexed. and as described before,
+		// we need to account for the lines we are now potentially creating for the table of contents
+        tocLines.push(`${bookmark+1+bibChangeOffset}: ${line.text}`);
+    }
+    tocLines.push('*********');
+    edit.insert(document.uri, new vscode.Position(0, 0), tocLines.join('\n'));
+
+    await vscode.workspace.applyEdit(edit);
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -67,3 +98,4 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() { }
+
