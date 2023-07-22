@@ -53,6 +53,9 @@ Initial release!
 
 Fixed some language-related compatibility issues with comments, added notice.
 
+### 1.0.2
+
+Removed explicit dependency on Bookmarks to allow loading into remote session, instead added error message if no bookmarks detected.
 ---
 
 **Enjoy!**

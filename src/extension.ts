@@ -48,7 +48,7 @@ async function getBookmarks(): Promise<number[]> {
 		}
 	} catch (error) {
 		console.error('Error reading bookmarks:', error);
-		vscode.window.showInformationMessage('Could not read bookmarks. Have you enabled "Save Bookmarks in Projects" in the Bookmarks extension settings?');
+		vscode.window.showInformationMessage('Could not read bookmarks. Do you have "Bookmarks" by Alessandro Fragnani installed, and have you enabled "Save Bookmarks in Projects" in the Bookmarks extension settings?');
 		return [];
 	}
 }
